@@ -1,0 +1,53 @@
+<?php
+session_start();
+include_once '../conexao.php';
+include_once '../../redirecionar.php';
+include_once('protectPerfil.php');
+
+$senhaAtual = $_POST['senhaAtual'];
+$senhaNova = $_POST['senhaNova'];
+$senhaNova2 = $_POST['senhaNova2'];
+
+$senhaHash = password_hash($senhaNova, PASSWORD_DEFAULT);
+
+if ($_SESSION['sucesso'] == 1) {
+    $emailUsuario = $_SESSION['login'];
+} else {
+    $_SESSION['msg'] = "E-mail NÃO cadastrado.";
+    header("Location: login.php");
+    exit();
+}
+
+$querySelectPerfil = "SELECT * FROM USUARIO WHERE EMAIL_USU LIKE '$emailUsuario'";
+$querySelectPerfil2 = $pdoCAT->query($querySelectPerfil);
+while ($registros = $querySelectPerfil2->fetch(PDO::FETCH_ASSOC)) {
+    $nmUsuario = $registros['NM_USU'];
+    $email = $registros['EMAIL_USU'];
+    $senha = $registros['SENHA_USU'];
+}
+
+if (!isset($email)) {
+    $_SESSION['msg'] = "E-mail NÃO cadastrado.";
+    header("Location: ../../login.php");
+    exit();
+} elseif (!password_verify($senhaAtual, $senha)) {
+    $_SESSION['msg'] = "Senha atual não confere.";
+    header("Location: ../../trocaSenhaUsuario.php");
+    exit();
+} elseif ($senhaNova != $senhaNova2) {
+    $_SESSION['msg'] = "As senhas não são iguais.";
+    header("Location: ../../trocaSenhaUsuario.php");
+    exit();
+}
+
+$queryAdmin2 = "UPDATE USUARIO SET SENHA_USU = '$senhaHash' WHERE EMAIL_USU LIKE '$emailUsuario'";
+$queryDesativar = $pdoCAT->query($queryAdmin2);
+
+$_SESSION['msg'] = "Senha atualizada com sucesso.";
+
+$_SESSION['redirecionar'] = '../trocaSenhaUsuario.php';
+$login = $_SESSION['login'];
+$tela = 'Troca Senha';
+$acao = 'Senha atualizada';
+$idEvento = 0;
+redirecionar("../../log.php?login=$login&tela=$tela&acao=$acao&idEvento=$idEvento");
